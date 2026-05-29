@@ -51,8 +51,32 @@ class HDFSDataPipeline:
         # Check for missing values
         # Check for data types
         # Log validation results
-        pass
-    
+        
+        validation_results = {
+            'is_valid': True,
+            'missing_columns': [],
+            'null_counts': {},
+            'data_types': {},
+            'total_rows': len(df)
+        }
+        # check missing columns and print err_log
+        err_columns = set(required_columns) - set(df.columns)
+
+        if err_columns:
+            validation_results['missing_columns'] = list(err_columns)
+            validation_results['is_valid'] = False
+            self.logger.error(f"Missing required columns: {err_columns}")
+
+        # check for null values
+        validation_results['null_counts'] = df.isnull().sum().to_dict()
+
+        # check for data types
+        validation_results['data_types'] = df.dtypes.to_dict()
+
+        # log validation results
+        self.logger.info(f"Data validation results: {validation_results['is_valid']}")
+        return validation_results
+
     def clean_data(self, df):
         """Clean and preprocess data"""
         # TODO: Implement data cleaning
@@ -60,23 +84,79 @@ class HDFSDataPipeline:
         # Remove duplicates
         # Standardize formats
         # Log cleaning results
-        pass
-    
+        original_rows = lemn(df)
+
+        # remove duplicates
+        df_clean = df.drop_duplicates()
+
+
+        # handle missing values
+        for column in df_clean.columns:
+            if df_clean[column].dtype in ['int64', 'float64']:
+                df_clean[column].fillna(df_clean[column].median(), inplace=True)
+            else:
+                df_clean[column].fillna('Unknown', inplace=True)
+
+        text_columns = df_clean.select_dtypes(include=['object']).columns
+        for column in text_columns:
+            if column != 'date':  # Don't standardize date columns
+                df_clean[column] = df_clean[column].str.title()
+
+        cleaned_rows = len(df_clean)
+        self.logger.info(f"Data cleaning completed. {original_rows} -> {cleaned_rows} rows")
+
+        return df_clean
+
     def aggregate_data(self, df, group_by_columns, agg_functions):
         """Perform data aggregations"""
         # TODO: Implement aggregation logic
         # Group data by specified columns
         # Apply aggregation functions
         # Return aggregated results
-        pass
-    
+        
+        try:
+            aggregated = df.groupby(group_by_columns).agg(agg_functions).round(2)
+            self.logger.info(f"Data aggregated by {group_by_columns}")
+            return aggregated
+        except Exception as e:
+            self.logger.error(f"Aggregation failed: {e}")
+            return None
+
     def generate_insights(self, df):
         """Generate business insights from data"""
         # TODO: Implement insight generation
         # Calculate key metrics
         # Identify trends and patterns
         # Create summary statistics
-        pass
+        insights = {
+            'timestamp': datetime.now().isoformat(),
+            'total_records': len(df),
+            'date_range': {
+                'start': df['date'].min() if 'date' in df.columns else None,
+                'end': df['date'].max() if 'date' in df.columns else None
+            }
+        }
+            
+        # Numeric column insights
+        numeric_columns = df.select_dtypes(include=[np.number]).columns
+        for col in numeric_columns:
+            insights[f'{col}_stats'] = {
+                'mean': round(df[col].mean(), 2),
+                'median': round(df[col].median(), 2),
+                'std': round(df[col].std(), 2),
+                'min': round(df[col].min(), 2),
+                'max': round(df[col].max(), 2)
+            }
+        
+        # Categorical insights
+        categorical_columns = df.select_dtypes(include=['object']).columns
+        for col in categorical_columns:
+            if col != 'date':
+                insights[f'{col}_distribution'] = df[col].value_counts().head(5).to_dict()
+        
+        self.logger.info("Business insights generated")
+        return insights
+        
     
     def save_results(self, data, filename, format='csv'):
         """Save processed data to HDFS"""
@@ -84,7 +164,25 @@ class HDFSDataPipeline:
         # Support multiple formats (CSV, JSON, TXT)
         # Handle errors gracefully
         # Log save operations
-        pass
+        
+        try:
+            if format == 'csv' and isinstance(data, pd.DataFrame):
+                content = data.to_csv(index=True)
+            elif format == 'json':
+                content = json.dumps(data, indent=2)
+            elif format == 'txt':
+                content = str(data)
+            else:
+                content = str(data)
+
+            with self.hdfs.write(filename) as f:
+                f.write(content)
+
+            self.logger.info(f"Data saved to {filename}")
+            return True
+        except Exception as e:
+            self.logger.error(f"Failed to save {filename}: {e}")
+            return False
     
     def run_pipeline(self, input_path, output_dir):
         """Execute the complete data pipeline"""
@@ -96,7 +194,77 @@ class HDFSDataPipeline:
         # 5. Generate insights
         # 6. Save results
         # 7. Create summary report
-        pass
+        try:
+            self.logger.info("Starting data pipeline execution")
+            
+            # 1. Read data from HDFS
+            with self.hdfs.open(input_path, 'rt') as f:
+                content = f.read()
+            df = pd.read_csv(StringIO(content))
+            self.logger.info(f"Data loaded: {len(df)} records")
+            
+            # 2. Validate data
+            required_columns = df.columns.tolist()
+            validation = self.validate_data(df, required_columns)
+            
+            # 3. Clean data
+            df_clean = self.clean_data(df)
+            
+            # 4. Create output directory
+            self.hdfs.mkdir(output_dir)
+            
+            # 5. Perform aggregations
+            if 'salary' in df_clean.columns and 'city' in df_clean.columns:
+                city_agg = self.aggregate_data(
+                    df_clean, 
+                    ['city'], 
+                    {'salary': ['mean', 'count', 'sum'], 'age': 'mean'}
+                )
+                if city_agg is not None:
+                    self.save_results(city_agg, f'{output_dir}/city_analysis.csv')
+            
+            # 6. Generate insights
+            insights = self.generate_insights(df_clean)
+            self.save_results(insights, f'{output_dir}/insights.json', 'json')
+            
+            # 7. Save cleaned data
+            self.save_results(df_clean, f'{output_dir}/cleaned_data.csv')
+            
+            # 8. Create summary report
+            report = f"""
+Data Processing Pipeline Report
+==============================
+Execution Time: {datetime.now().isoformat()}
+
+Input: {input_path}
+Output Directory: {output_dir}
+
+Data Summary:
+- Original Records: {validation['total_rows']}
+- Processed Records: {len(df_clean)}
+- Data Quality: {'PASS' if validation['is_valid'] else 'FAIL'}
+
+Generated Files:
+- cleaned_data.csv: Processed dataset
+- city_analysis.csv: City-wise aggregations
+- insights.json: Business insights
+- pipeline_report.txt: This summary
+
+Pipeline Status: COMPLETED SUCCESSFULLY
+"""
+            self.save_results(report, f'{output_dir}/pipeline_report.txt', 'txt')
+            
+            self.logger.info("Data pipeline completed successfully")
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"Pipeline failed: {e}")
+            return False
+    if success:
+        print("Advanced data pipeline completed successfully!")
+        print("Check /exercises/exercise4/output/ for results")
+    else:
+        print("Pipeline execution failed - check logs")
 
 def exercise4():
     """Complete the advanced data pipeline"""
@@ -123,6 +291,7 @@ def solution_exercise4():
         
         def validate_data(self, df, required_columns):
             """Validate DataFrame structure and data quality"""
+
             validation_results = {
                 'is_valid': True,
                 'missing_columns': [],
