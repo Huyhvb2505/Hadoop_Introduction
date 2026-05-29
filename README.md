@@ -394,5 +394,6 @@ This educational demo is provided for academic use. Please ensure proper attribu
 This demo provides a comprehensive introduction to Hadoop/HDFS with Python integration. Work through the exercises progressively, and don't hesitate to explore beyond the basic requirements. The skills learned here form the foundation for big data processing and distributed computing.
 
 For questions or support, refer to the troubleshooting section or consult the provided resources.
-#   H a d o o p _ I n t r o d u c t i o n  
+#   H a d o o p _ I n t r o d u c t i o n 
+ 
  

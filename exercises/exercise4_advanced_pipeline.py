@@ -37,8 +37,13 @@ class HDFSDataPipeline:
     def __init__(self, hdfs_host='namenode', hdfs_port=8020):
         """Initialize the data pipeline"""
         # TODO: Initialize HDFS connection and setup logging
-        pass
-    
+        self.host = hdfs_host
+        self.port = hdfs_port
+        self.hdfs = InsecureClient(f'http://{self.host}:{self.port}')
+
+        self.logger = logging.getLogger(__name__)
+        self.logger.info("HDFS Data Pipeline initialized")
+
     def validate_data(self, df, required_columns):
         """Validate DataFrame structure and data quality"""
         # TODO: Implement data validation

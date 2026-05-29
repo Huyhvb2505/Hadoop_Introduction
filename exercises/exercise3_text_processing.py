@@ -40,7 +40,7 @@ def exercise3():
 
     print("Original text:")
     print(text_content[:200] + "..." if len(text_content) > 200 else text_content)
-    print("===================END REPORT======================")
+    
     # TODO: Task 2 - Clean and preprocess text
     # Convert to lowercase
     # Remove punctuation and special characters
@@ -83,11 +83,59 @@ def exercise3():
     # Count sentences and paragraphs
     # Find longest and shortest words
     # Calculate text statistics
-    
+    parts_sentences = re.split(r'[.!?]+', text_content)
+    sentences = len([p.strip() for p in parts_sentences if p.strip()])
+
+    paragraphs = len([p.strip() for p in text_content.split('\n') if p.strip()])
+
+    longest_word = max(filtered_words, key=len) if filtered_words else ""
+    shortest_word = min(filtered_words, key=len) if filtered_words else ""
+
+    print(f"\nText Statistics:")
+    print(f"  Sentences: {sentences}")
+    print(f"  Paragraphs: {paragraphs}")
+    print(f"  Longest word: {longest_word} ({len(longest_word)} chars)")
+    print(f"  Shortest word: {shortest_word} ({len(shortest_word)} chars)")
+
     # TODO: Task 6 - Generate report
     # Create comprehensive analysis report
     # Save results to HDFS
-    
+    hdfs.makedirs('/exercises/exercise3/')
+
+
+
+   
+    # Save detailed report
+    report = f"""
+Text Analysis Report
+===================
+
+Original Text:
+{text_content[:200] + "..." if len(text_content) > 200 else text_content}
+
+Total Words: {len(words)}
+Unique Words: {len(word_count)}
+Filtered Words: {len(filtered_words)}
+
+Most Common Words:
+"""
+    for word, count in top_10_words:
+        report += f"  {word}: {count}\n"
+
+    report += f"""
+Average Word Length: {avg_word_length:.2f}
+
+Text Statistics:
+  Sentences: {sentences}
+  Paragraphs: {paragraphs}
+  Longest Word: {longest_word} ({len(longest_word)} chars)
+  Shortest Word: {shortest_word} ({len(shortest_word)} chars)
+"""
+
+    with hdfs.write('/exercises/exercise3/sample_analysis_report.txt', encoding='utf-8', overwrite=True) as f:
+        f.write(report)
+    print("\n=============Analysis report saved to /exercises/exercise3/sample_analysis_report.txt==============")
+
     print("Exercise 3 completed!")
 
 def solution_exercise3():
