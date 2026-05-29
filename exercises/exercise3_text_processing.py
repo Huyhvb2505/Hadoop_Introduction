@@ -21,6 +21,9 @@ Tasks:
 
 from hdfs import InsecureClient
 import re
+
+
+
 from collections import Counter
 import json
 
@@ -31,21 +34,51 @@ def exercise3():
     hdfs = InsecureClient('http://namenode:9870')
     
     # TODO: Task 1 - Read text file from HDFS
-    # Read /data/sample_text.txt from HDFS
-    
+    # Read /data/sample_text.txt from HDFS /exercises/exercise2/age_group_analysis.txt
+    with hdfs.read('/exercises/exercise2/age_group_analysis.txt', encoding='utf-8') as f:
+        text_content = f.read() 
+
+    print("Original text:")
+    print(text_content[:200] + "..." if len(text_content) > 200 else text_content)
+    print("===================END REPORT======================")
     # TODO: Task 2 - Clean and preprocess text
     # Convert to lowercase
     # Remove punctuation and special characters
     # Split into words
+    text_content = text_content.lower()
     
+    words = re.findall(r'\b[a-z]+\b',text_content)
+
+    print(f"\n===Total words found====== : {len(words)}")
+    print((words))
+
     # TODO: Task 3 - Implement word count
     # Count frequency of each word
     # Remove common stop words (the, and, is, etc.)
-    
+    stop_words = {
+        'the', 'and', 'is', 'to', 'of', 'a', 'an', 'in', 'on', 'at', 'for', 'with',
+        'by', 'it', 'are', 'be', 'or', 'as', 'that', 'have', 'has', 'will', 'from',
+        'they', 'them', 'their', 'this', 'these', 'those', 'was', 'were', 'been'
+    }
+
+    filtered_words = [word for word in words if word not in stop_words]
+    word_count = Counter(filtered_words)
+
+    print(f"\n====Words after filtering ====: {len(filtered_words)}")
+    print(f"\n====Unique words =====\n")
+    for word,count in sorted(word_count.items(), key =lambda x : x[1], reverse=True):
+        print(f"  {word}: {count}")
     # TODO: Task 4 - Find most common words
     # Get top 10 most frequent words
     # Calculate average word length
-    
+    print(f"\n====Top 10 most common words =====\n")
+    top_10_words = word_count.most_common(10)
+    for word,count in top_10_words:
+        print(f"  {word}: {count}")
+
+    avg_word_length = sum(len(word) for word in filtered_words) / len(filtered_words)
+    print(f"\n====Average word length ===== : {avg_word_length:.2f}")
+
     # TODO: Task 5 - Analyze patterns
     # Count sentences and paragraphs
     # Find longest and shortest words
