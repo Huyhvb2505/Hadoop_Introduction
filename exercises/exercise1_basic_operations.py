@@ -30,6 +30,7 @@ def exercise1():
     # Initialize HDFileSystem with namenode host and port
     hdfs = InsecureClient('http://namenode:9870')  # Replace with your connection
     
+    
 
     # TODO: Task 2 - Create directory structure
     # Create /exercises/exercise1/ directory

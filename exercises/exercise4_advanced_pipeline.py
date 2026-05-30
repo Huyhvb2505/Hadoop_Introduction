@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 class HDFSDataPipeline:
     """A comprehensive data processing pipeline for HDFS"""
     
-    def __init__(self, hdfs_host='namenode', hdfs_port=8020):
+    def __init__(self, hdfs_host='namenode', hdfs_port=9870):
         """Initialize the data pipeline"""
         # TODO: Initialize HDFS connection and setup logging
         self.host = hdfs_host
@@ -84,7 +84,7 @@ class HDFSDataPipeline:
         # Remove duplicates
         # Standardize formats
         # Log cleaning results
-        original_rows = lemn(df)
+        original_rows = len(df)
 
         # remove duplicates
         df_clean = df.drop_duplicates()
@@ -199,14 +199,24 @@ class HDFSDataPipeline:
             
             
             # 1. Read data from HDFS
-            with self.hdfs.read(input_path) as f:
+            with self.hdfs.read(input_path, encoding='utf-8') as f:
                 content = f.read()
 
             df = pd.read_csv(StringIO(content))
             self.logger.info(f"Data loaded: {len(df)} records")
             
             # 2. Validate data
-            required_columns = df.columns.tolist()
+            
+            required_columns = [
+                'employee_id',
+                'name',
+                'age',
+                'city',
+                'department',
+                'salary',
+                'experience_years',
+                'date'
+            ]
             validation = self.validate_data(df, required_columns)
             
             # 3. Clean data
@@ -263,30 +273,7 @@ Pipeline Status: COMPLETED SUCCESSFULLY
             self.logger.error(f"Pipeline failed: {e}")
             return False
 
-# make path from hdfs, for input
 
-
-
-pipeline = HDFSDataPipeline()
-
-# make path from hdfs, for input
-pipeline.hdfs.makedirs('/exercises/exercise4/')
-
-#0 upload file from disk to hdfs
-pipeline.hdfs.upload('/exercises/exercise4/sample_employee_data.csv', '/data/sample_data_chatgpt.csv', overwrite=True)
-
-pipeline.logger.info("Sample data are ready!!!!!")
-
-success = pipeline.run_pipeline(
-    '/exercises/exercise4/sample_employee_data.csv',
-    '/exercises/exercise4/output'
-)
-
-if success:
-    print("Advanced data pipeline completed successfully!")
-    print("Check /exercises/exercise4/output/ for results")
-else:
-    print("Pipeline execution failed - check logs")
 
 def exercise4():
     """Complete the advanced data pipeline"""
@@ -299,8 +286,34 @@ def exercise4():
     
     # TODO: Implement error handling
     # Handle connection errors, file not found, etc.
-    
-    print("Exercise 4 completed!")
+
+    try:
+        pipeline = HDFSDataPipeline()
+
+        # make path from hdfs, for input
+        pipeline.hdfs.makedirs('/exercises/exercise4/')
+
+        #0 upload file from disk to hdfs
+        pipeline.hdfs.upload('/exercises/exercise4/sample_employee_data.csv', '/data/sample_data_chatgpt.csv', overwrite=True)
+
+        pipeline.logger.info("Sample data are ready!!!!!")
+
+        success = pipeline.run_pipeline(
+            '/exercises/exercise4/sample_employee_data.csv',
+            '/exercises/exercise4/output'
+        )
+
+        if success:
+            print("Advanced data pipeline completed successfully!")
+            print("Check /exercises/exercise4/output/ for results")
+        else:
+            print("Pipeline execution failed - check logs")
+            
+            print("Exercise 4 completed!")
+    except Exception as e:
+        print(f"Exercise 4 failed: {e}")
+
+
 
 def solution_exercise4():
     """Solution for exercise 4"""
@@ -415,10 +428,10 @@ def solution_exercise4():
                     content = str(data)
                 else:
                     content = str(data)
-                
-                with self.hdfs.open(filename, 'wt') as f:
+
+                with self.hdfs.write(filename, overwrite=True) as f:
                     f.write(content)
-                
+
                 self.logger.info(f"Data saved to {filename}")
                 return True
             except Exception as e:
