@@ -197,9 +197,11 @@ class HDFSDataPipeline:
         try:
             self.logger.info("Starting data pipeline execution")
             
+            
             # 1. Read data from HDFS
-            with self.hdfs.open(input_path, 'rt') as f:
+            with self.hdfs.read(input_path) as f:
                 content = f.read()
+
             df = pd.read_csv(StringIO(content))
             self.logger.info(f"Data loaded: {len(df)} records")
             
@@ -211,8 +213,8 @@ class HDFSDataPipeline:
             df_clean = self.clean_data(df)
             
             # 4. Create output directory
-            self.hdfs.mkdir(output_dir)
-            
+            self.hdfs.makedirs(output_dir)
+
             # 5. Perform aggregations
             if 'salary' in df_clean.columns and 'city' in df_clean.columns:
                 city_agg = self.aggregate_data(
@@ -260,11 +262,31 @@ Pipeline Status: COMPLETED SUCCESSFULLY
         except Exception as e:
             self.logger.error(f"Pipeline failed: {e}")
             return False
-    if success:
-        print("Advanced data pipeline completed successfully!")
-        print("Check /exercises/exercise4/output/ for results")
-    else:
-        print("Pipeline execution failed - check logs")
+
+# make path from hdfs, for input
+
+
+
+pipeline = HDFSDataPipeline()
+
+# make path from hdfs, for input
+pipeline.hdfs.makedirs('/exercises/exercise4/')
+
+#0 upload file from disk to hdfs
+pipeline.hdfs.upload('/exercises/exercise4/sample_employee_data.csv', '/data/sample_data_chatgpt.csv', overwrite=True)
+
+pipeline.logger.info("Sample data are ready!!!!!")
+
+success = pipeline.run_pipeline(
+    '/exercises/exercise4/sample_employee_data.csv',
+    '/exercises/exercise4/output'
+)
+
+if success:
+    print("Advanced data pipeline completed successfully!")
+    print("Check /exercises/exercise4/output/ for results")
+else:
+    print("Pipeline execution failed - check logs")
 
 def exercise4():
     """Complete the advanced data pipeline"""

@@ -1,0 +1,14 @@
+employee_id,name,age,city,department,salary,experience_years,date
+1,Nguyen Van An,25,Hue,Engineering,25000000,2,2024-01-15
+2,Tran Thi Binh,30,Da Nang,Data,35000000,5,2023-05-20
+3,Le Van Cuong,28,HCM,Engineering,28000000,3,2022-11-10
+4,Pham Thi Dung,35,Hanoi,HR,22000000,8,2021-08-12
+5,,27,Hue,Data,30000000,4,2023-02-18
+6,Hoang Van Em,40,HCM,Finance,,12,2020-07-01
+7,Nguyen Thi Giang,29,Da Nang,Marketing,26000000,6,2022-04-22
+8,Do Van Hung,31,Hue,Sales,24000000,5,2023-01-10
+8,Do Van Hung,31,Hue,Sales,24000000,5,2023-01-10
+9,Le Thi Hoa,26,,Engineering,27000000,2,2024-03-05
+10,Tran Van Khanh,45,Hanoi,Finance,-5000000,20,2019-06-15
+11,Pham Van Long,22,Hue,Data,20000000,0,2024-01-01
+12,Nguyen Thi Mai,150,HCM,HR,23000000,3,2023-09-09
